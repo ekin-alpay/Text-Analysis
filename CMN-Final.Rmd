@@ -1,0 +1,483 @@
+---
+title: "CMN-Final Paper: Analyzing Leader Speeches Cases of Trump and Biden"
+output:
+  html_document: default
+  pdf_document: default
+date: "2024-04-22"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+##setwd('/Users/apple/Documents')
+
+##Packages
+library(tidyverse)
+library(tidytext)
+library('wordcloud2')
+library(spacyr)
+library('quanteda')
+library('wordcloud')
+library('tm')
+library('textdata')
+library('topicmodels')
+library('reshape2')
+
+
+
+#spacy_install(python_version = '3.9')
+#spacy_initialize()
+
+```
+
+**Introduction** 
+
+In recent politics, leaders became central figures of political debates. Regardless of the power invested in their posts, the impact of leaders are much more visible in the policy routes. The traces of leader personality can be read over very simple acts. For example, Trump was against many international agreements ranging from environmental treaties to trade agreements arguing that they put the United States in a disadvantaged position. As a result, he either threatened or actually withdrew the country from some of the landmark treaties such as Paris Agreement. Immediately after him, President Biden renew the membership of United States upon receiving the administration. 
+
+While this is a rather simple example of how presidents read the political scenery and react to it, impact of their personality, beliefs and ideologies cannot be underestimated. Similarly, leaders have their own support groups and opponents in their party and electorate. For example, Never-Trumpers was a big opposition movement against Trump's candidacy. Some republicans were strictly against him and his influence on the party's stance, while he developed a strong voters base that wears "MAGA" merchandise. 
+
+In this sense, leadership plays a pivotal role in shaping societies, guiding nations, and influencing the course of history. Leaders are not just figureheads but are also key architects of public sentiment and collective identity.The manner in which leaders address their constituents, respond to crises, and articulate their goals significantly impacts societal attitudes, behaviors, and perceptions. Therefore, their speeches serve as critical instruments for communicating vision, policy, and values, thereby channeling public opinion on various issues. These public speeches convey many messages regarding style, manner, sentiment, frame and ideology. While acknowledging that people also consume these messages through media's influence, as the main source of coverage, leader speeches are valuable sources of research. 
+
+By analyzing leader speeches, researchers can trace change and continuities in communication strategies, sentimental manipulations, agenda setting preferences of leaders. Some of the analysis target analyzing personality, belief systems and emotional states of leaders. Second, such analyses contribute to understanding how leaders influence public opinion, frame issues, and legitimize their actions and policies. This is particularly relevant in an era where media proliferation has amplified the reach and impact of political messages. Thus, leader speeches become a very valuable sources for political communication and related analysis. 
+
+My study here aims to explore the thematic and rhetorical constructs within political speeches of President Biden and President Trump. It attempts to offer a detailed descriptive insight into speech analysis, as well as the themes and sentiments within their speeches. Main focus of the paper is about an argumentative comparison of the topics and sentiments within their speeches in search of differences or convergences among the two leader's public addresses. 
+
+As a convenience sample, I randomly selected 10 speeches for both of the leaders from their presidential page on White House official website. All of these speeches are relatively long, at least lasting more than two pages per speech to maximize the amount of wording from leaders. In terms of content, both sets of speeches cover topics like economy, security, holiday addresses, foreign policy related matters, public sphere matters and COVID-19. Advantage of covering variety of speeches is again maximizing the amount of potential contexts for different sentiments they convey. For example, a security related speech could communicate fear, anxiety, aggression while a public holiday address could convey hope, happiness and positivity. It is useful to keep the range of speech contexts rich for this purpose. The time frames of both speech sets are relatively close. It covers the last year of Trump administration and the first year of Biden administration. The reason for this selection is that keepign the range of the issues relatively closer and connected to each other shows the leader differences and convergences better. When two leaders can speak about COVID, it creates a fruitful context to compare and contrast their approaches and vocabularies. I collected the speech sets in one document per each president. In the future version of this paper, speeches can be stored as individual documents for per-document statistics as an extension.
+
+In the next sections, I present the literature on the leader impact on public opinion, the research design and findings of my study. In terms of the codes, The previous code chunk installs required packages and initialize them for the analysis along with the data. 
+
+**Literature Review**
+
+The nature of the interaction between elite influence and public opinion and political behavior is rather complex. Elite messaging plays a pivotal role in shaping public opinion and influencing political behavior, especially on issues like voting, immigration, and national identity. However, this relationship also contains its intracacies. 
+
+The importance of elite messages has many dimensions. Tone and emotions invested in them are two of the most important ones. Box-Steffenmeier and Moses (2021), for example, finds that the address of Democrats and Republicans about COVID highly differed. While the former was more negative about the matter, the latter was more positive. As a result, how public interacted with these messages and how they spread it also differed from each other. 
+
+This is an important effect that elite messages have on public opinion. However, Barisione (2009) suggests that the level of influence that leaders have vary according to different factors. A leader can have a direct or indirect effect. While direct effects that are more based on his person can work without mediators, indirect effects can work over factors like the political, economic, and media environment, party affiliation or political ideology. Similarly, Guisinger and Saunders (2017) argues that the influence of elite cues varies significantly based on the context of the issue at hand. Issues that are less polarized or where the public is not strongly aligned with elite opinion are more susceptible to influence from elite cues. Their findings suggest that elite cues can effectively shape public opinion under specific conditions but also highlight the challenges in changing public opinion on polarized issues
+
+On the other hand, Tappin, Berinsky and Rand (2023) provide an experimental analysis of how partisan biases do not diminish the receptivity to persuasive messages even when opposing party leader cues are present. Their study reveals that individuals integrate persuasive messages from elites as independent information sources, which can influence opinions despite conflicting partisan cues. 
+
+While elite messages are potent tools for shaping public perceptions and behaviors, their effectiveness is contingent upon several factors including the message’s tone, complexity, the existing public opinion climate, and the level of partisan polarization. These works collectively suggest that understanding the dynamics of elite messaging is crucial for both scholars and practitioners aiming to effectively communicate and engage with the public on complex and divisive issues. 
+
+I expect to see a difference between the two leaders considering their opposing positions in issue matters, the partisan polarization they represent, their personality differences and very distinct positions on certain important poliices such as COVID, abortion, or migration. 
+
+
+```{r data, include=TRUE}
+
+
+##Reading the data: 
+trump <- read_lines("trump_public.txt")
+biden <- read_lines("biden_public.txt")
+
+trumpt <- trump %>% as_tibble()
+bident <- biden %>% as_tibble()
+
+##Checking what the stop words include: 
+str(stop_words)
+
+##Tokenizing the data: 
+trump_tok <- trumpt %>%
+  mutate(value = str_replace_all(value, "’" , "'")) %>%
+  unnest_tokens(word, value) %>% 
+  anti_join(stop_words, by = "word") 
+
+biden_tok <- bident %>%
+  mutate(value = str_replace_all(value, "’" , "'")) %>%
+  unnest_tokens(word, value) %>% 
+  anti_join(stop_words, by = "word")
+
+```
+
+**Methods and Results**
+
+I will explain the methods and the results of this study as I go through the code chunks here. In each chunk, there is a different method is implemented so I wil introduce them one by one.
+
+Firstly, the previous chunk has the data reading and tokenization. The data I have is one document per each president and each document stores 10 speeches. As a second step, I tokenize this data, which means that I split the text into one word per each row and each word becomes a data point. The same tokenization code, also cleans the text from stop-words such as contractions, "and, or, so, but etc.". The reason for this cleaning is, for example, when we check the word frequency, there is a likelihood that these stop words will show as the most frequent words. However, they are not as informative for my analysis herein. Hence, cleaning them out offers a more clean data to analyze. 
+
+
+In the next chunk, I check the word frequencies for each leader. Word frequency refers to the most frequently used words in both documents in terms of the word counts. The results are not very surprising. For Biden, three most used words are "people, america, american", while for Trump they are "applause, people, country, american". Both of the presidents almost perfectly converge in their most frequently used words. Also considering that these are formal public speeches, the context also justifies these uses. The word "applause" that appears on Trump's word counts could be a random descriptive word in the script while he might be using it many time within contexts. For future expansions of the study, I will look into this. In terms of word frequencies, both leaders seem to almost the same. 
+
+The word frequency plots also visualize these word counts. They show all the words that are used more than 75 times. These plots could be enriched by plotting different counts such as 50, 75 and 100 for more comparison. Also, the count lists are very informative about the words and their counts in the documents. 
+
+```{r frequency}
+
+##Word Frequency :
+
+biden_tok %>%
+  count(word, sort=T) 
+
+trump_tok %>%
+  count(word, sort=T)
+
+
+##Plotting the Word Frequency: 
+
+biden_tok %>%
+  count(word, sort=T) %>%
+  filter(n > 75) %>%
+  mutate(word = reorder(word, -n)) %>%
+  ggplot(aes(word, n)) +
+  geom_col() +
+  xlab(NULL) +
+  theme_minimal()
+
+trump_tok %>%
+  count(word, sort=T) %>%
+  filter(n > 75) %>%
+  mutate(word = reorder(word, -n)) %>%
+  ggplot(aes(word, n)) +
+  geom_col() +
+  xlab(NULL) +
+  theme_minimal()
+
+```
+
+In the next code chunk, I check the N-grams of both presidential speech sets. N-grams are a tool of natural language processing models for purposes of speech recognition or text prediction. An n-gram is a contiguous sequence of n items from a given sample of text or speech.It represents a given amount words continuously appearing together in the same other in a text. 
+
+I employ this technic in the next chunk. I start with tokenizing the data, into three word n-grams, the trigrams. This tokenization creates some NAs in the resulting data, so I also went through cleaning of these NAs. But this is also a good reason to control the data structure after every tokenization. One thing to note here is that, these trigram tokenization uses the initially tokenized, clean data. Another way of doing this could be tokenizing the original data into trigrams and deciding whether to clean from the stop words or not. Stop words can actually be meaningful in word groups, so the decision to clean them or not could be a design based decision. 
+
+
+The following graphs visualize the results as trigrams that are repeated in the speeches more than 20 times. The first figure is for Trump's set of speeches. Most repeated tri-grams in this case are mostly tenses, and "thank you very much" combinations. Again unsurprisingly, "the united states" also shows. The second graph, on the other hand, depicts the n-grams of Biden. His speeches also unsurprisingly has "the united states" as one of the most frequently used word group. Similarly, his n-gram shows many tense usages. I think both leaders again converge on their n-grams mostly. They both speak in future tense, mention the country name and use assertive phareses like "i want to". 
+
+The only difference is "american rescue plan" and "the rescue plan" in Biden's n-gram. This is also not a surprising result as Biden initiated the rescue plan as an economic response to COVID. One surprising thing here is that, the words "COVID, corona, virus" do not show up a lot in either presidents's word counts. The reason for this could be a topic for a discussion. 
+
+
+```{r ngram}
+##N-Gram:
+
+trump_gram<- trumpt %>%
+  unnest_tokens(ngram, value, token="ngrams", n=3)
+
+biden_gram <- bident %>%
+  unnest_tokens(ngram, value, token="ngrams", n=3)
+
+table(is.na(biden_gram)) ##Biden's gram data has 595 NAs
+table(is.na(trump_gram)) ## 621 NAs for Trump. I will remove these NAs in the ngram code. 
+
+trump_gram %>%
+    filter(!is.na(ngram)) %>%  ##removes the NAs 
+  count(ngram, sort=T) %>%
+  filter(n>20) %>%
+  mutate(ngram= reorder(ngram, -n)) %>%
+  ggplot(aes(ngram, n)) +  xlab(NULL) + geom_col() + coord_flip() 
+
+biden_gram %>%
+    filter(!is.na(ngram)) %>% 
+  count(ngram, sort=T) %>%
+  filter(n>20) %>%
+  mutate(ngram= reorder(ngram, -n)) %>%
+  ggplot(aes(ngram, n)) +  xlab(NULL) + geom_col() + coord_flip()
+
+```
+
+The next chunk includes the word clouds of the most frequently used words. Word clouds are visual representations of frequent used words and helpful to see all the words together. The most frequently used ones are usually written in bigger punto or bolder than the rest of the words. It is mostly used for text exploration and keyword detection. Those words that are frequent and important for the text can be seen all together in a word cloud. They are mostly visual and descriptive tools rather than quantitative analysis tools. 
+
+In my word clouds here, I only allowed for 75 most frequent words, but this number can change according to the desing and results of the frequency analysis. They do not include words that are used less than 5 times, this is again up to researchers decisions. I prefer to demonstrate as many words as possible here because I used a convenience sample of speeches. 
+
+The first word cloud is from Biden's speeches. It mostly shows policy related words such as jobs, vaccines, supply, food, home, economy. Second cloud is from Trump's speeches. Frequently used words as less apparent in his word cloud but we can still see a similar range of words as Biden. One difference between these two clouds are Biden uses more keywords in his speeches, while Trump's speeches are more dispersed across different words. 
+
+However, caution is required here when coming to a conclusion as this tool is mostly descriptive. These words can very much issue-specific or context dependent due to my speech selection. 
+
+```{r clouds}
+
+##Word Clouds: 
+wordcloud(biden_tok$word, min.freq=5, max.words=75)
+wordcloud(trump_tok$word, min.freq=5, max.words=75)
+
+
+```
+
+Next chunk of code simply merges to documents of speeches together and introduces a new column for the president name. I do this merging for ease in calculating the TF-IDF analysis. I will explain this procedure in the next paragraph within TF-IDF. 
+
+```{r merge, echo=TRUE}
+
+##Merging the two datasets here: 
+mergert <- trump_tok %>% 
+  mutate(president = "Trump")
+
+mergerb <- biden_tok%>% 
+  mutate(president = "Biden")
+
+merged <- bind_rows(mergert, mergerb)
+
+```
+
+
+TF-IDF, which stands for Term Frequency-Inverse Document Frequency, is a numerical statistic that is intended to reflect how important a word is to a document in a collection or corpus. It is a common weighting factor in information retrieval and text mining that helps in evaluating how relevant a word is to a document in a dataset. The relevance increases proportionally to the number of times a word appears in the document but is offset by the frequency of the word in the corpus.
+
+Term Frequency (TF) measures how frequently a term occurs in a document. It is calculated by dividing the number of times the term appears in the document by the total number of terms in the document. This normalization accounts for the varying lengths of documents. While
+Inverse Document Frequency (IDF) measures how important a term is within the entire corpus. It is calculated by taking the logarithm of the number of documents in the corpus divided by the number of documents where the term appears. This helps in diminishing the weight of terms that occur very frequently across the corpus and are hence less informative.
+
+Since TF-IDF is a document based analysis, I had to merge two datasets to create different documents based on the president giving the speech. In this sense, for TF-IDF method, my unit of analysis is the presidents rather than each individual speech. This makes more sense for the context of my study because I am interested in comparing thw two presidents. However, for a design interested in the change within one term of a president, individual speech documents could be much more heplful for the analysis. 
+
+In terms of the results, the most important word in Trump's speeches was "seniors" and for Biden was "folks". Interestingly, both are referring to an audience in these words. The graph depicts the most important terms more in detail. In Trump's side of the figure, some of the traditional issue areas that are symbolized with his name are becoming more visible such as border, court, judge and ballots. More coincidentally, Biden's side of the graphic shows more of the issue areas that were time-specific in his early term presidency such vaccination, vaccinate, shots or democracy. Also another thing to notice here is that Trump's words have mostly higher TF-IDF scores compared to Biden. 
+
+
+```{r tfidf, echo=TRUE}
+
+##TF-IDF Scores: 
+
+merged %>% 
+  group_by(president) %>% 
+  count(word) %>% 
+  ungroup() %>% 
+  bind_tf_idf(word, president, n) %>% 
+  arrange(desc(tf_idf)) %>%
+  mutate(word = factor(word, levels = rev(unique(word))))
+
+
+##TF-IDF Graph
+merged %>% 
+  group_by(president) %>% 
+  count(word) %>% 
+  ungroup() %>% 
+  bind_tf_idf(word, president, n) %>% 
+  arrange(desc(tf_idf)) %>%
+  mutate(word = factor(word, levels = rev(unique(word)))) %>%
+group_by(president) %>% 
+  top_n(10) %>% 
+  ungroup() %>% 
+  ggplot(aes(word, tf_idf, fill = factor(president))) +
+  geom_col(show.legend = FALSE) +
+  labs(x = NULL, y = "TF-IDF", "TF-IDF & Presidents") +
+  facet_wrap(~president, ncol = 3, scales = "free") +
+  coord_flip()+
+  scale_fill_ordinal()+
+  theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
+
+
+```
+
+One of the important methods I use in this analysis is Sentiment Analysis. Sentiment analysis, also known as opinion mining, is a field within natural language processing (NLP) that focuses on identifying and categorizing opinions expressed in text to determine the writer's or speaker's sentiment towards specific topics or the overall contextual polarity of the text. The primary objective is to determine the attitude of a speaker or a writer with respect to some topic or the overall tonality of a document.
+
+The type of analysis I am aiming for is emotion detection. This involves identifying specific emotions, such as happiness, anger, or sadness. Techniques might involve more sophisticated linguistic analysis, including the use of emotion lexicons like the NRC Emotion Lexicon.
+I am using a lexicon-based approache. These involve a dictionary of sentiment-laden words and phrases, along with rules for combining their sentiment scores. Tools like the Afinn Lexicon or Bing Liu's Opinion Lexicon and NRC are examples that I employ here.
+
+Understanding the sentiments of leader speeches is highly important to understand its impact on public opinion. These speeches often employ a spectrum of sentiments—from hope and solidarity to fear and urgency—to resonate with listeners and influence their perceptions and behaviors. For instance, expressions of optimism and resolve can inspire confidence and collective action, while articulating threats or crises can rally support for specific policies or initiatives. Such emotional appeals are strategically crafted to shape public sentiment and, consequently, public behavior. By analyzing these emotional undercurrents, researchers and political analysts can better understand how political figures harness sentiment to achieve their objectives, sway public opinion, and ultimately, steer the political landscape. This approach not only illuminates the direct effects of political rhetoric on the populace but also enhances our understanding of the broader political dynamics at play, including the mobilization of support and the framing of political narratives.
+
+
+
+```{r nrc, echo=TRUE}
+##Sentiment Analysis: 
+
+##I am downloading the dictionaries for the sentiment analysis. These dictionaries are contained in 'textdata' package. 
+
+##To get a detailed look into the dictionaries:
+get_sentiments("afinn")
+get_sentiments("bing")
+get_sentiments("nrc")
+
+
+##NRC: 
+
+nrc_trump <- trump_tok %>%
+        right_join(get_sentiments("nrc")) %>%
+        filter(!is.na(sentiment)) %>%
+        count(sentiment, sort = TRUE)
+
+nrc_biden <- biden_tok %>%
+        right_join(get_sentiments("nrc")) %>%
+        filter(!is.na(sentiment)) %>%
+        count(sentiment, sort = TRUE)
+
+ggplot(nrc_biden, aes(x = sentiment, y = n, fill = sentiment)) +
+  geom_col(show.legend = FALSE) +
+  labs(title = "Emotion Distribution in Biden Text Data", x = "Emotion", y = "Frequency") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+ggplot(nrc_trump, aes(x = sentiment, y = n, fill = sentiment)) +
+  geom_col(show.legend = FALSE) +
+  labs(title = "Emotion Distribution in Trump Text Data", x = "Emotion", y = "Frequency") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+In the previous chunk, I first install the dictionaries and particularly look ar NRC lexicon. This lexicon maps words to eight basic emotions (anger, fear, anticipation, trust, surprise, sadness, joy, and disgust) and two sentiments (positive and negative). The approach allows for a nuanced understanding of text by identifying the specific emotions and sentiments associated with the words in the text, rather than simply classifying the overall sentiment as positive or negative.
+
+According to my results, both leaders are very close to each other in terms of the emotions they convey in their speeches. Trump is slightly higher in trust and positive emotions. 
+
+```{r bing, echo=TRUE}
+##Bing: 
+
+bings <- merged %>%
+  group_by(president) %>%
+        right_join(get_sentiments("bing")) %>%
+        filter(!is.na(sentiment)) %>%
+        count(sentiment, sort = TRUE)
+
+##Checking the word counts for positive and negative: 
+bing_word_counts <- merged %>%
+  inner_join(get_sentiments("bing")) %>%
+  count(word, sentiment, sort = TRUE) %>%
+  ungroup()
+
+##Graphing the most used words for positive and negative categories: 
+bing_word_counts %>%
+        group_by(sentiment) %>%
+        top_n(10) %>%
+        ggplot(aes(reorder(word, n), n, fill = sentiment)) +
+          geom_bar(alpha = 0.8, stat = "identity", show.legend = FALSE) +
+          facet_wrap(~sentiment, scales = "free_y") +
+          labs(y = "Contribution to sentiment", x = NULL) +
+          coord_flip()
+
+##Graphing the Net Sentiments for each president: 
+merged %>%
+  mutate(word_count = 1:n(),  # Assuming n() should be the total number of rows in merged
+         index = word_count %/% 500 + 1) %>%
+  inner_join(get_sentiments("bing")) %>%
+  count(president, index = index, sentiment) %>%
+  ungroup() %>%
+  spread(sentiment, n, fill = 0) %>%
+  mutate(sentiment = positive - negative) %>%
+  ggplot(aes(x = index, y = sentiment, fill = president)) +  # Corrected the ggplot call
+    geom_col(alpha = 0.5, show.legend = FALSE) +  # Changed to geom_col which is appropriate for bar plots
+    facet_wrap(~president, ncol = 2, scales = "free_x") +
+    labs(x = "Index", y = "Net Sentiment") +  # Adding labels for clarity
+    theme_minimal()
+```
+The second dictionary I use for analysis is Bing-Liu Dictionary. It is also known as the "Opinion Lexicon" or "Sentiment Lexicon." This lexicon is widely used in the field of text analytics for the purpose of sentiment analysis, specifically to identify opinions expressed in text as either positive or negative.
+
+The results are also similar in this analysis. In the net sentiment, Trump seems to be more positive in the words he use. His word choices seem to rank higher on the positive scale. While Biden is more neutral and some of his word choices fall under the negative line. 
+
+```{r afinn, echo=TRUE}
+## AFINN: 
+
+##General look into total afinn scores:
+afinn <- merged %>% 
+  group_by(president) %>%
+  inner_join(get_sentiments("afinn")) %>% 
+summarise(total = sum(value), .groups = 'drop') %>% 
+  ungroup %>% 
+  mutate(Neg = if_else(total < 0, TRUE, FALSE))
+
+##detailed look into afinn scores of individual words for each president: 
+afinn_b <- mergerb %>%
+        group_by(president) %>%
+        mutate(sentence_num = 1:n(),
+               index = round(sentence_num / n(), 2)) %>%
+        inner_join(get_sentiments("afinn")) %>%
+        group_by(president)
+
+afinn_t <- mergert %>%
+        group_by(president) %>%
+        mutate(sentence_num = 1:n(),
+               index = round(sentence_num / n(), 2)) %>%
+        inner_join(get_sentiments("afinn")) %>%
+        group_by(president)
+
+
+biden_afinn <- ggplot(afinn_b, aes(x = sentence_num, y = value, group = 1)) +
+  geom_path(color = "#BA0E00") +  # Plot the path
+  geom_hline(yintercept = 0, color = "#024D38") +  # Add a horizontal line at zero
+  theme_classic() +
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    plot.title = element_text(hjust = 0.5, color = "#EA181E", size = 20, face = "bold")
+  ) +
+  geom_text(data = afinn_b %>% filter(value < 0), aes(label = sentence_num), angle = 90, size = 3, vjust = -0.5) +
+  labs(title = "Total Sentiment Score Each Episode with Afinn Lexicon", 
+       y = "Total Sentiment Score")
+
+trump_afinn <- ggplot(afinn_t, aes(x = sentence_num, y = value, group = 1)) +
+  geom_path(color = "#BA0E00") +  # Plot the path
+  geom_hline(yintercept = 0, color = "#024D38") +  # Add a horizontal line at zero
+  theme_classic() +
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    plot.title = element_text(hjust = 0.5, color = "#EA181E", size = 20, face = "bold")
+  ) +
+  geom_text(data = afinn_b %>% filter(value < 0), aes(label = sentence_num), angle = 90, size = 3, vjust = -0.5) +
+  labs(title = "Total Sentiment Score Each Episode with Afinn Lexicon", 
+       y = "Total Sentiment Score")
+
+
+```
+
+Last dictionary I use for the sentiment analysis is Afinn. It is a simple, straightforward lexicon that scores words on a scale typically ranging from -5 to +5, with negative numbers indicating negative sentiments and positive numbers indicating positive sentiments. This scoring system allows for a degree of granularity that is not present in binary sentiment analysis tools like the Bing Liu Lexicon.
+
+
+When we look at the total Afinn scores of the both leaders, they have positive scores. Trump seems to have the highest score. This indicates that his words got the highest scores of positives after the substraction of the negative sentiments. Biden's score is almost the half of Trump. This indicates that his speeches are positive in sentiment overall but either has more negative sentiments or neutral. 
+
+The last method I employ is the topic modelling. Topic modeling is a form of statistical modeling for discovering abstract topics that occur in a collection of documents. It is a key technique in text mining used for unsupervised classification of documents, clustering text into meaningful patterns of topics, and discovering hidden thematic structures in extensive text bodies. This method is highly valuable in extracting insights from large volumes of text data without requiring explicit annotations or labeled data sets.
+
+The technic I use of topic modelling is LDA. One of the most popular and fundamental topic modeling algorithms. LDA assumes documents are mixtures of topics, where each topic is a distribution over words. This method allows texts to be analyzed to discover their relevant topics based on their word distributions.
+
+The results show that the two presidents have their seperate agendas with a minor overlap of topics. In terms of the words they use, the words are very close to the frequency tables but over the beta scores in this table. However, the LDA method works over a defined number of expected topics. I set this number to two so I can see the overlaps within their speeches clearly. This shows how different their topics are independent of the number of wordd they commonly use. 
+
+
+```{r topics, echo=TRUE}
+
+##Topic Modelling: 
+
+dtm <- merged %>% 
+  select(president, word) %>% 
+  group_by(president, word) %>% 
+  count() %>% 
+  cast_dtm(president, word, n)
+
+
+lda_model <- LDA(dtm, k = 2, method = "Gibbs", control = list(seed = 1234))
+
+
+topics <- tidy(lda_model, matrix = "beta")
+
+top_terms <- topics %>%group_by(topic) %>%
+  top_n(10, beta) %>%
+  ungroup() %>%
+  arrange(topic, -beta)
+
+
+##Graphing Word-Topic Probabilities: 
+top_terms %>%
+  mutate(term = reorder_within(term, beta, topic)) %>%
+  ggplot(aes(term, beta, fill = factor(topic))) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ topic, scales = "free") +
+  coord_flip() +
+  scale_x_reordered()+
+  labs(title = "Word-Topic Probabilities")+
+  theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
+
+
+##Graping Document-Topic Probabilities: 
+
+documents <- tidy(lda_model, matrix = "gamma")
+
+documents %>% 
+  ggplot(aes(document, gamma, fill = factor(topic)))+
+  geom_col(position = "fill")+
+  labs(x = "President", fill = "Topic", y = "Gamma", title = "Document-Topic Probabilities")+
+  scale_fill_ordinal()+
+  theme(
+    legend.position = "top",
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold")
+  )
+```
+
+**Discussion**
+
+Overall, I think the results in this study do not necessarily meet the expectatoins I have. Both leaders demonstrate similar sentiment and topic patterns. While Trump appears to use more emotionally charged words that are positive, Biden is more on the neutral side of the spectrum. 
+However, I am careful to draw conclusions from this study. Firstly, the sample of the speeches I chose is not a representative or a random sample of speehces. I think an automated process could serve the purposes of this paper much better. Secondly, these speeches are mostly pre-written speeches of leaders. Running these analysis on interviews or improvised talks of leaders could yield more informative results. Lastly, the results are also context dependent. Some of the topics are negative in their nature, and some are positive. What we make of these results depends on the research. So the researchers should be cautious about the conclusions they draw from leader speech analysis. 
+
+**Conclusions** 
+
+Overall, this study is an attempt to highlight the importance of leaders's public speeches. The results showed that the sentiments and the approaches of the leaders did not substantially differ from each other. However, there could be improvements to this study to maintain healthier results and more precise conclusions.
+
+
+**References:** 
+
+Barisione, M. (2009). So, What Difference Do Leaders Make? Candidates’ Images and the 'Conditionality' of Leader Effects on Voting.
+Bayar, E. (n.d.). F.R.I.E.N.D.S text mining & data visualization. Kaggle. Retrieved from https://www.kaggle.com/code/ekrembayar/f-r-i-e-n-d-s-text-mining-data-visualization/report#tf-idf
+Bischof, D., & Senninger, R. (2017). Simple politics for the people? Complexity in campaign Messages and political knowledge. European Journal of Political Research.
+Box-Steffensmeier, J. M., & Moses, L. (2021). Meaningful messaging: Sentiment in elite social media communication with the public on the COVID-19 pandemic.
+Graeber, J., McRee, N., & Setzler, M. (2019). The Effects of Polarizing Elite Messaging on Nationalism, Patriotism, and Views of Immigration. Sociation, 18(2), 1-19.
+Guisinger, A., & Saunders, E. N. (2017). Mapping the Boundaries of Elite Cues: How Elites Shape Mass Opinion across International Issues.
+Silge, J., & Robinson, D. (n.d.). Text mining with R. Tidy Text Mining. Retrieved from https://www.tidytextmining.com/topicmodeling
+Tappin, B. M., Berinsky, A. J., & Rand, D. G. (2023). Partisans' receptivity to persuasive messaging is undiminished by countervailing party leader cues.
+Wijffels, J. (n.d.). An introduction to text mining and topic modeling in R. LADAL - Language Data Analytics Lab. Retrieved from https://ladal.edu.au/topicmodels.html#Topic_Modelling
